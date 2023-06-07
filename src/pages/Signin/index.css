@@ -1,0 +1,11 @@
+.fullwidth {
+  width: 50% ;
+  left: 25% ;
+  right: 25% ;
+}
+
+@media (max-width: 900px) {
+  .fullwidth {
+    
+  }
+}
