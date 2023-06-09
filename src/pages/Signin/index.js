@@ -26,7 +26,7 @@ export default function Signin() {
     const formData = { ...form };
     try{
       axios
-      .post(`${BASE_URL}/auth/login`, formData)
+      .post(`${BASE_URL}/api/auth/login`, formData)
       .then((response) => {
         const token = response.data.token;
         console.log(response.data);
@@ -54,7 +54,7 @@ export default function Signin() {
     
   };
   const [showAlert, setShowAlert] = useState(false);
-
+  
   const handleClick = () => {
     setShowAlert(true);
     setTimeout(() => {

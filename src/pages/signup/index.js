@@ -27,14 +27,14 @@ export default function Signup() {
     });
     const formData = { ...form };
       axios
-      .post(`${BASE_URL}/auth/register`, formData)
+      .post(`${BASE_URL}/api/auth/register`, formData)
       .then((response) => {
         setTimeout(() => {
           navigate("/signin");
         }, 1000);
       })
       .catch((err) => {
-        console.log(err.response.data.message);
+        console.log(err);
       });
     }catch(err){
       console.log('err');

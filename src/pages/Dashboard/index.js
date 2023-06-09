@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
+import urlJoin from "url-join";
+
 import {
   PUBLIC_PINATA_API_KEY,
   PUBLIC_PINATA_SECRET_API_KEY,
-  BASE_URL
+  BASE_URL,
 } from "../../config";
-
 
 function Dashboard() {
   const [pageCount, setpageCount] = useState(1);
@@ -16,11 +18,14 @@ function Dashboard() {
   const [isLoading, setloading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [feedUrl, setFeedUrl] = useState(null);
+  const [watermark, setwatermark] = useState("");
+  const [showAlert, setShowAlert] = useState(false);
 
   const handleFileChange = (event) => {
     setFiles(Array.from(event.target.files));
   };
-  
+
   const handleDeleteImage = (index) => {
     setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
@@ -29,35 +34,86 @@ function Dashboard() {
   };
 
   const handleNextPageClick = () => {
-    setCurrentPage(currentPage + 1);
+    if (currentPage < pageCount) setCurrentPage(currentPage + 1);
   };
 
   const handleUpload = async () => {
-    setloading(true);
-    const datas = await uploadFilesFIU(files);
-    console.log("receive datas", datas);
-    try {
-      await axios
-        .post(`${BASE_URL}/upload`, datas)
-        .then((response) => {
-          console.log(response.data);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    } catch (err) {
-      console.log(err);
+    if (watermark != "") {
+      setloading(true);
+      // const datas = await uploadFilesFIU(files);
+      // try {
+      //   await axios
+      //     .post(`${BASE_URL}/api/upload`, datas)
+      //     .then((response) => {
+      //       console.log(response.data);
+      //     })
+      //     .catch((err) => {
+      //       console.log(err);
+      //     });
+      // } catch (err) {
+      //   console.log(err);
+      // }
+      console.log("files:", files);
+      const formData = new FormData();
+
+      for (let i = 0; i < files.length; i++) {
+        console.log(files[i]);
+        formData.append("files", files[i]);
+      }
+      console.log(formData);
+      const userid = JSON.parse(localStorage.getItem("user"))._id;
+      try {
+        await axios
+          .post(`${BASE_URL}/api/upload`, formData, {
+            headers: { 
+              userID: userid,
+              watermarktext: watermark 
+            },
+          })
+          .then((res) => {
+            console.log(res.data);
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      } catch (err) {
+        console.log(err);
+      }
+
+      setloading(false);
+      setflag(!flag);
+      setwatermark("");
+      for (var i = 0; i < files.length; i++) {
+        handleDeleteImage(0);
+      }
     }
-    setloading(false);
-    setflag(!flag);
-    for(var i=0;i<files.length;i++){handleDeleteImage(0)}
+    else{
+      setShowAlert(true);
+      setTimeout(() => {
+        setShowAlert(false);
+      }, 1000);
+    }
+  };
+  const Alert = ({ message, onClose }) => {
+    return (
+      <div className="fixed top-0 right-0 m-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg">
+        <div className="flex justify-between items-center">
+          <span>{message}</span>
+          <button onClick={onClose} className="text-white hover:text-red-200">
+            &times;
+          </button>
+        </div>
+      </div>
+    );
+  };
+  const handleCloseAlert = () => {
+    setShowAlert(false);
   };
 
   const handleClick = (url) => {
     setSelectedImage(url);
     setShowModal(true);
   };
-
 
   const getIpfsHash = async (formData) => {
     try {
@@ -82,42 +138,40 @@ function Dashboard() {
   const uploadFilesFIU = async (files) => {
     try {
       const userid = JSON.parse(localStorage.getItem("user"))._id;
-      console.log('files: ', files)
+      console.log("files: ", files);
       let hashes = [];
       for await (const _file of files) {
         const formData = new FormData();
         formData.append("file", _file);
         const hash = await getIpfsHash(formData);
-        hashes.push([_file.name, hash, userid])
+        hashes.push([_file.name, hash, userid]);
       }
-      // const hashes = await Promise.all(
-      //   files.map(async (_file) => {
-      //     const formData = new FormData();
-      //     formData.append("file", _file);
-      //     const hash = await getIpfsHash(formData);
-      //     return [_file.name, hash, userid];
-      //   })
-      // );
-      console.log('hashes: ', hashes)
+      console.log("hashes: ", hashes);
       return hashes;
     } catch (err) {
       console.log(err);
     }
   };
 
+  const feedHandler = async () => {
+    const userid = JSON.parse(localStorage.getItem("user"))._id;
+    let url = `${BASE_URL}/api/rss/${userid}`;
+    setFeedUrl(url);
+  };
+
   const fetchImageData = async () => {
     try {
-      axios.get(`${BASE_URL}/photos`).then(async (response) => {
-        console.log('response: ', response)
-        setpageCount(parseInt(response.data.length / 18)+1);
+      axios.get(`${BASE_URL}/api/photos`).then(async (response) => {
+        console.log("response: ", response);
+        setpageCount(parseInt(response.data.length / 18) + 1);
         console.log(currentPage);
-        if ((currentPage) * 18 > response.data.length) {
+        if (currentPage * 18 > response.data.length) {
           await setImageUrl(
-            response.data.slice((currentPage-1) * 18, response.data.length)
+            response.data.slice((currentPage - 1) * 18, response.data.length)
           );
         } else {
           await setImageUrl(
-            response.data.slice((currentPage-1) * 18, currentPage * 18)
+            response.data.slice((currentPage - 1) * 18, currentPage * 18)
           );
         }
       });
@@ -135,16 +189,52 @@ function Dashboard() {
         className="bg-cover bg-center flex-grow"
         style={{ backgroundImage: `url('lake.jpg')` }}
       >
-        <div className="container mx-auto px-4 py-32 flex justify-center items-center">
-          <div className="w-full max-w-sm">
-            <div className="flex border border-gray-300 rounded-full overflow-hidden">
+        <div className="container mx-auto px-4 py-10">
+          <div className="flex flex-col md:flex-row justify-center md:items-center space-y-4 md:space-y-0 md:space-x-4">
+            <div className="relative flex-grow">
               <input
-                className="appearance-none bg-gray-100 border-none w-full text-gray-700 py-2 px-3 leading-tight focus:outline-none"
                 type="text"
+                name="search"
+                id="search"
+                className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-400"
                 placeholder="Search"
-                aria-label="Search"
               />
-              <button className="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-4">
+              <button className="absolute top-0 right-0 mt-3 mr-3">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-4.35-4.35M8 14a6 6 0 110-12 6 6 0 010 12zm0 0v4m0 4V14"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="relative flex-shrink-0">
+              <input
+                type="text"
+                name="rss-feed"
+                id="rss-feed"
+                value={feedUrl}
+                className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-400 pointer-events-none"
+                placeholder="RSS Feed"
+                readOnly
+              />
+              <button
+                className="absolute top-0 right-10 bg-transparent text-gray-400 mr-6 font-bold py-2 rounded-l-none rounded-r-lg focus:outline-none"
+                onClick={() => {
+                  const rssFeedInput = document.getElementById("rss-feed");
+                  rssFeedInput.select();
+                  document.execCommand("copy");
+                }}
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
@@ -156,10 +246,15 @@ function Dashboard() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M21 21l-4.35-4.35"
+                    d="M9 5h7a2 2 0 012 2v10a2 2 0 01-2 2H9a2 2 0 01-2-2V7a2 2 0 012-2zm0 0V3a2 2 0 012-2h3m-5 5l5-5m0 0L8 10m5-5h5a2 2 0 012 2v10a2 2 0 01-2 2h-5m5-12v5a2 2 0 01-2 2H9a2 2 0 01-2-2V3m5 17l-5-5m0 0l5-5m-5 5h5"
                   />
-                  <circle cx="10" cy="10" r="8" />
                 </svg>
+              </button>
+              <button
+                className="absolute top-0 right-0 bg-indigo-500 text-white font-bold px-4 py-2 rounded-lg"
+                onClick={feedHandler}
+              >
+                RSS
               </button>
             </div>
           </div>
@@ -167,15 +262,12 @@ function Dashboard() {
       </div>
 
       <div className="container mx-auto pt-8 pb-16 px-4">
-        
-        {/* <button onClick={fetchImageData}>fewfefeefa</button> */}
-
         <div className="flex flex-col lg:flex-row">
           <div className="w-full lg:w-3/4 px-2 py-8">
             <div className="container mx-auto mt-16 p-4">
-              <div className="flex flex-row justify-between items-center mb-4">
+              <div className="flex flex-row justify-between items-center mb-4 border-b border-gray-500 pb-4">
                 <h2 className="text-primary text-2xl font-bold">My Photos</h2>
-                <form className="text-primary">
+                <div className="text-primary">
                   <label htmlFor="pageInput" className="mr-4">
                     Page
                   </label>
@@ -189,20 +281,16 @@ function Dashboard() {
                     className="w-20 h-8 rounded-md border border-gray-300 px-3 py-1 mr-4 text-sm"
                   />
                   of {pageCount}
-                </form>
+                </div>
               </div>
 
-              <div className="flex flex-wrap mt-8 justify-center">
-                {imageUrl.map(({ filename, filepath, _id }) => (
-                  <div
-                    key={_id}
-                    className="relative w-40 h-40 aspect-w-1 aspect-h-1 py-6 m-2"
-                  >
+              <div className="flex flex-wrap mt-8 justify-center gap-2 m-4">
+                {imageUrl.map(({ filename, userID, _id }) => (
+                  <div key={_id} className="relative">
                     <img
                       className="rounded-lg w-40 h-40 object-cover cursor-pointer"
-                      src={`https://brown-planned-manatee-865.mypinata.cloud/ipfs/${filepath}`}
+                      src={`${BASE_URL}/public/image/${userID}/${filename}`}
                       alt={filename}
-                      
                     />
                     <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 transition-opacity duration-300 hover:opacity-100 bg-black bg-opacity-60">
                       <h2 className="text-white text-xl font-bold mb-2">
@@ -213,7 +301,7 @@ function Dashboard() {
                         className="text-white hover:text-primary text-sm"
                         onClick={() =>
                           handleClick(
-                            `https://brown-planned-manatee-865.mypinata.cloud/ipfs/${filepath}`
+                            `${BASE_URL}/public/image/${userID}/${filename}`
                           )
                         }
                       >
@@ -229,15 +317,18 @@ function Dashboard() {
                 {showModal && (
                   <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center z-50 p-6">
                     <div
-                      className="absolute top-0 left-0 w-full h-full bg-black opacity-20"
+                      className="absolute top-0 left-0 w-full h-full bg-black opacity-40"
                       onClick={() => setShowModal(false)}
                     ></div>
-                    <div className="bg-white rounded-lg overflow-hidden shadow-lg transform animate__animated animate__zoomIn">
+                    <div className="bg-white rounded-lg overflow-hidden shadow-lg transform animate__animated animate__zoomIn m-2">
                       <img
                         className="w-full object-contain"
                         src={selectedImage}
                         alt=""
                         style={{ filter: "brightness(100%)" }}
+                        onClick={() => {
+                          setShowModal(false);
+                        }}
                       />
                     </div>
                   </div>
@@ -255,23 +346,27 @@ function Dashboard() {
                   Pre
                 </button>
                 <div className="flex justify-center items-center h-10 space-x-2 mt-4 md:mt-0">
-                  {{pageCount}>5?[1,2,3,4,5]:Array.from({length:pageCount}, (_, i) => i + 1).map((pageNumber) => (
-                    <a
-                      key={`page-${pageNumber}`}
-                      href={`#${pageNumber}`}
-                      className={`${
-                        pageNumber === currentPage
-                          ? "bg-primary text-white"
-                          : "bg-white text-gray-600 hover:text-primary"
-                      } font-semibold py-2 px-4 rounded-md transition-colors duration-300`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage(pageNumber);
-                      }}
-                    >
-                      {pageNumber}
-                    </a>
-                  ))}
+                  {{ pageCount } > 5
+                    ? [1, 2, 3, 4, 5]
+                    : Array.from({ length: pageCount }, (_, i) => i + 1).map(
+                        (pageNumber) => (
+                          <a
+                            key={`page-${pageNumber}`}
+                            href={`#${pageNumber}`}
+                            className={`${
+                              pageNumber === currentPage
+                                ? "bg-primary text-white"
+                                : "bg-white text-gray-600 hover:text-primary"
+                            } font-semibold py-2 px-4 rounded-md transition-colors duration-300`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(pageNumber);
+                            }}
+                          >
+                            {pageNumber}
+                          </a>
+                        )
+                      )}
                 </div>
                 <button
                   onClick={handleNextPageClick}
@@ -286,7 +381,7 @@ function Dashboard() {
           <div className="hidden lg:block border-l border-gray-300 h-full my-8"></div>
 
           <div className="w-full lg:w-1/4 px-2 py-8">
-            <div className="pb-8 mb-8">
+            <div className="pb-8 mb-8 mt-16">
               <div className="flex flex-col items-center justify-center space-y-4 md:space-x-4">
                 <div className="flex items-center justify-center w-full">
                   <label
@@ -316,7 +411,6 @@ function Dashboard() {
                         SVG, PNG, JPG or GIF (MAX. 800x400px)
                       </p>
                     </div>
-
                     <input
                       id="dropzone-file"
                       type="file"
@@ -337,6 +431,18 @@ function Dashboard() {
                     </button>
                   </label>
                 </div>
+                <div className="flex items-center justify-center w-full">
+                  <input
+                    type="text"
+                    name="watermark"
+                    id="watermark"
+                    value={watermark}
+                    onChange={(e) => setwatermark(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-400"
+                    placeholder="WatermarkText"
+                  />
+                </div>
+                {showAlert && <Alert message="Confirm your WatermarkText" onClose={handleCloseAlert} />}
               </div>
             </div>
 

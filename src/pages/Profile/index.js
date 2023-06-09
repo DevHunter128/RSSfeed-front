@@ -26,7 +26,7 @@ const Profile = () => {
   useEffect(()=>{
     try{
     const userid = JSON.parse(localStorage.getItem("user"))._id;
-    axios.get(`${BASE_URL}/auth/profile`,{
+    axios.get(`${BASE_URL}/api/auth/profile`,{
       headers: {
         userid: userid,
       }
@@ -45,7 +45,7 @@ const Profile = () => {
     tmp.password = md5(userDetails.password);
     try{
       axios
-      .post(`${BASE_URL}/auth/profile`, tmp)
+      .post(`${BASE_URL}/api/auth/profile`, tmp)
       .then((response)=>{
         console.log(response.data);
       })
