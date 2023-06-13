@@ -263,6 +263,105 @@ function Dashboard() {
 
       <div className="container mx-auto pt-8 pb-16 px-4">
         <div className="flex flex-col lg:flex-row">
+          <div className="w-full lg:w-1/4 px-2 py-8">
+            <div className="pb-8 mb-8 mt-16">
+              <div className="flex flex-col items-center justify-center space-y-4 md:space-x-4">
+                <div className="flex items-center justify-center w-full">
+                  <label
+                    htmlFor="dropzone-file"
+                    className="inline-flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
+                  >
+                    <div className="flex flex-col items-center justify-center pt-3 pb-4">
+                      <svg
+                        className="w-8 h-8 mb-2 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                      </svg>
+                      <p className="mb-1 text-sm text-gray-500">
+                        <span className="font-semibold">Choose file</span> or
+                        drag and drop here
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        SVG, PNG, JPG or GIF (MAX. 800x400px)
+                      </p>
+                    </div>
+                    <input
+                      id="dropzone-file"
+                      type="file"
+                      className="hidden"
+                      accept=".jpg, .png, .jpeg, .gif, .svg, .bmp"
+                      multiple
+                      onChange={handleFileChange}
+                    />
+                    <button
+                      className={`py-2 px-4 rounded-md ${
+                        isLoading ? "bg-gray-500" : "bg-blue-500"
+                      } text-white`}
+                      // className={`bg-green-500 hover:bg-green-700 ${isLoading ? 'bg-gray-500' : 'bg-blue-500'}  text-white font-bold py-2 px-4 rounded-full`}
+                      onClick={handleUpload}
+                      disabled={isLoading}
+                    >
+                      Upload
+                    </button>
+                  </label>
+                </div>
+                <div className="flex items-center justify-center w-full">
+                  <input
+                    type="text"
+                    name="watermark"
+                    id="watermark"
+                    value={watermark}
+                    onChange={(e) => setwatermark(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-400"
+                    placeholder="WatermarkText"
+                  />
+                </div>
+                {showAlert && <Alert message="Confirm your WatermarkText" onClose={handleCloseAlert} />}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap mt-8 justify-center">
+              {files.map((file, index) => (
+                <div key={index} className="relative w-20 h-20 p-1">
+                  <img
+                    src={URL.createObjectURL(file)}
+                    alt={`Uploaded Image ${index}`}
+                    className="rounded-lg w-full h-full object-cover"
+                  />
+                  <button
+                    onClick={() => handleDeleteImage(index)}
+                    className="absolute top-0 right-0 p-1 bg-white-800 text-gray rounded-full hover:bg-red-700 focus:outline-none"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 5.293a1 1 0 011.414 0L10 8.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l3.293 3.293a1 1 0 01-1.414 1.414L10 11.414l-3.293 3.293a1 1 0 01-1.414-1.414L8.586 10 5.293 6.707a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+
+          <div className="hidden lg:block border-l border-gray-300 h-full my-8"></div>
+
           <div className="w-full lg:w-3/4 px-2 py-8">
             <div className="container mx-auto mt-16 p-4">
               <div className="flex flex-row justify-between items-center mb-4 border-b border-gray-500 pb-4">
@@ -375,104 +474,6 @@ function Dashboard() {
                   Nex
                 </button>
               </div>
-            </div>
-          </div>
-
-          <div className="hidden lg:block border-l border-gray-300 h-full my-8"></div>
-
-          <div className="w-full lg:w-1/4 px-2 py-8">
-            <div className="pb-8 mb-8 mt-16">
-              <div className="flex flex-col items-center justify-center space-y-4 md:space-x-4">
-                <div className="flex items-center justify-center w-full">
-                  <label
-                    htmlFor="dropzone-file"
-                    className="inline-flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
-                  >
-                    <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                      <svg
-                        className="w-8 h-8 mb-2 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                        />
-                      </svg>
-                      <p className="mb-1 text-sm text-gray-500">
-                        <span className="font-semibold">Choose file</span> or
-                        drag and drop here
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        SVG, PNG, JPG or GIF (MAX. 800x400px)
-                      </p>
-                    </div>
-                    <input
-                      id="dropzone-file"
-                      type="file"
-                      className="hidden"
-                      accept=".jpg, .png, .jpeg, .gif, .svg, .bmp"
-                      multiple
-                      onChange={handleFileChange}
-                    />
-                    <button
-                      className={`py-2 px-4 rounded-md ${
-                        isLoading ? "bg-gray-500" : "bg-blue-500"
-                      } text-white`}
-                      // className={`bg-green-500 hover:bg-green-700 ${isLoading ? 'bg-gray-500' : 'bg-blue-500'}  text-white font-bold py-2 px-4 rounded-full`}
-                      onClick={handleUpload}
-                      disabled={isLoading}
-                    >
-                      Upload
-                    </button>
-                  </label>
-                </div>
-                <div className="flex items-center justify-center w-full">
-                  <input
-                    type="text"
-                    name="watermark"
-                    id="watermark"
-                    value={watermark}
-                    onChange={(e) => setwatermark(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg text-gray-700 focus:outline-none focus:border-indigo-500 placeholder-gray-400"
-                    placeholder="WatermarkText"
-                  />
-                </div>
-                {showAlert && <Alert message="Confirm your WatermarkText" onClose={handleCloseAlert} />}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap mt-8 justify-center">
-              {files.map((file, index) => (
-                <div key={index} className="relative w-20 h-20 p-1">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={`Uploaded Image ${index}`}
-                    className="rounded-lg w-full h-full object-cover"
-                  />
-                  <button
-                    onClick={() => handleDeleteImage(index)}
-                    className="absolute top-0 right-0 p-1 bg-white-800 text-gray rounded-full hover:bg-red-700 focus:outline-none"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 5.293a1 1 0 011.414 0L10 8.586l3.293-3.293a1 1 0 111.414 1.414L11.414 10l3.293 3.293a1 1 0 01-1.414 1.414L10 11.414l-3.293 3.293a1 1 0 01-1.414-1.414L8.586 10 5.293 6.707a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))}
             </div>
           </div>
         </div>
